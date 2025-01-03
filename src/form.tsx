@@ -22,6 +22,8 @@ const InvoiceForm = () => {
   const [billNumber, setBillNumber] = useState(0);
   const [currentDate] = useState(getCurrentDate());
   const [loading, setLoading] = useState(false); // Loading state for managing the loader
+  const [additionalInfo, setAdditionalInfo] = useState(''); // State to store textbox value
+
   useEffect(() => {
     const storedBillNumber = localStorage.getItem('billNumber');
     if (storedBillNumber) {
@@ -115,6 +117,7 @@ const InvoiceForm = () => {
       form.append('amount', allAmounts.trim());
       form.append('total-amount', totalAmount.toFixed(2));
       form.append('payment-mode', paymentMode);
+      form.append('additional-info', additionalInfo); // Append the additional info to the form
 
       const response = await fetch(scriptURL, {
         method: 'POST',
@@ -189,7 +192,6 @@ const InvoiceForm = () => {
               value={customerDetails.name}
               onChange={handleCustomerChange}
               placeholder="CNr. Name:"
-              required
             />
             <input
               className="ip"
@@ -198,7 +200,6 @@ const InvoiceForm = () => {
               value={customerDetails.address}
               onChange={handleCustomerChange}
               placeholder="Address:"
-              required
             />
             <input
               className="ip"
@@ -207,7 +208,6 @@ const InvoiceForm = () => {
               value={customerDetails.gstin}
               onChange={handleCustomerChange}
               placeholder="GSTIN No:"
-              required
             />
             <label htmlFor="cnename" style={{ marginTop: "10px" }}>CNe. Name:</label>
             <input
@@ -218,7 +218,6 @@ const InvoiceForm = () => {
               value={customerDetails.cnename}
               onChange={handleCustomerChange}
               placeholder="CNe. Name:"
-              required
 
             />
             <input
@@ -228,7 +227,6 @@ const InvoiceForm = () => {
               value={customerDetails.caddress}
               onChange={handleCustomerChange}
               placeholder="Address:"
-              required
 
             />
             <input
@@ -238,7 +236,6 @@ const InvoiceForm = () => {
               value={customerDetails.cgstin}
               onChange={handleCustomerChange}
               placeholder="GSTIN No:"
-              required
 
             />
           </div>
@@ -288,12 +285,16 @@ const InvoiceForm = () => {
             ))}
           </tbody>
         </table>
-        <input type="button" value="ADD" onClick={addRow} className="add-btn" style={{ width: "90px", height: "30px" }} />
-
-        <div className="total">
-          <p>CGST (2.5%)</p>
-          <p>SGST (2.5%)</p>
-          <p>Total Amount: {(totalAmount).toFixed(2)}</p>
+        <div style={{display:"flex",justifyContent:"space-between",margin:"10px"}}>
+          <div>
+            <input type="button" value="ADD" onClick={addRow} className="add-btn" style={{ width: "90px", height: "30px" }} /><br />
+            <input type="text" value={additionalInfo} onChange={(e) => setAdditionalInfo(e.target.value)} placeholder="Additional Information" style={{ marginTop: "5px", height: "3rem", width:"15rem"}} />
+          </div>
+          <div>
+            <p>CGST (2.5%)</p>
+            <p>SGST (2.5%)</p>
+            <p>Total Amount: {(totalAmount).toFixed(2)}</p>
+          </div>
         </div>
 
         <div className="payment-section">
