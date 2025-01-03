@@ -131,6 +131,7 @@ const InvoiceForm = () => {
         setPaymentMode('Paid');
         setTotalAmount(0);
         setBillNumber(billNumber + 1);
+        setAdditionalInfo('');
       } else {
         throw new Error('Failed to submit the form.');
       }
