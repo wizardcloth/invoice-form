@@ -273,7 +273,8 @@ button {
     .payment-section,
     .add-btn,
     .delete-btn,
-    .submit-btn {
+    .submit-btn,
+    .resetbill {
         display: none;
     }
 

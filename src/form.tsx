@@ -1,40 +1,53 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import './style.css';
+import { Loader } from 'lucide-react'; // Import Loader from lucide-react
+import { ToastContainer, toast } from 'react-toastify'; // Import ToastContainer and toast
+import 'react-toastify/dist/ReactToastify.css'; // Import toast styles
 
 const InvoiceForm = () => {
+
   const [rows, setRows] = useState([
     { description: '', quantity: 0, unitPrice: 0, amount: 0 }
   ]);
-
   const [customerDetails, setCustomerDetails] = useState({
     name: '',
     address: '',
     gstin: '',
-    cnename: '',  // Add these fields
+    cnename: '',
     caddress: '',
     cgstin: '',
   });
-
   const [paymentMode, setPaymentMode] = useState('Paid');
   const [totalAmount, setTotalAmount] = useState(0);
-  const [billNumber, setBillNumber] = useState(0); // Bill number state
-  const [currentDate] = useState(getCurrentDate()); // Date state
+  const [billNumber, setBillNumber] = useState(0);
+  const [currentDate] = useState(getCurrentDate());
+  const [loading, setLoading] = useState(false); // Loading state for managing the loader
+  useEffect(() => {
+    const storedBillNumber = localStorage.getItem('billNumber');
+    if (storedBillNumber) {
+      setBillNumber(parseInt(storedBillNumber, 10));
+    }
+  }, []);
 
-  // Function to get current date in dd/mm/yyyy format
+  useEffect(() => {
+    if (billNumber !== 0) {
+      localStorage.setItem('billNumber', billNumber.toString());
+    }
+  }, [billNumber]);
+
   function getCurrentDate() {
     const date = new Date();
     const day = String(date.getDate()).padStart(2, '0');
-    const month = String(date.getMonth() + 1).padStart(2, '0'); // Months are zero-indexed
+    const month = String(date.getMonth() + 1).padStart(2, '0');
     const year = date.getFullYear();
     return `${day}/${month}/${year}`;
   }
 
-  const scriptURL = import.meta.env.VITE_GOOGLE_SCRIPT_URL;  ;
+  const scriptURL = import.meta.env.VITE_GOOGLE_SCRIPT_URL;
   if (!scriptURL) {
     console.error("Google Script URL is not defined.");
     return;
   }
-
 
   const handleCustomerChange = (e: any) => {
     const { name, value } = e.target;
@@ -65,28 +78,24 @@ const InvoiceForm = () => {
   };
 
   const handlebillno = () => {
-    setBillNumber(0);
+    setBillNumber(0);  // Reset the bill number state
+    localStorage.removeItem('billNumber');  // Remove the bill number from localStorage
   };
 
   const handleSubmit = async (e: any) => {
     e.preventDefault();
+    setLoading(true); // Start loading
 
     try {
       const form = new FormData();
-
-      // Append the original customer details
       form.append('CNr-name', customerDetails.name);
       form.append('Address', customerDetails.address);
       form.append('gstin', customerDetails.gstin);
-
-      // Append the new customer details (cnrname, caddress, cgstin)
       form.append('CNe-name', customerDetails.cnename);
       form.append('Address2', customerDetails.caddress);
       form.append('gstin2', customerDetails.cgstin);
-
-      // Append date and bill number
       form.append('billno', billNumber.toString());
-      form.append('date', currentDate); // Include the date field
+      form.append('date', currentDate);
 
       let allDescriptions = '';
       let allQuantities = '';
@@ -94,18 +103,16 @@ const InvoiceForm = () => {
       let allAmounts = '';
 
       rows.forEach((row) => {
-        allDescriptions += `${row.description}\n`;  // Add descriptions, separated by newlines
-        allQuantities += `${row.quantity}\n`;      // Add quantities, separated by newlines
-        allUnitPrices += `${row.unitPrice}\n`;     // Add unit prices, separated by newlines
-        allAmounts += `${row.amount.toFixed(2)}\n`; // Add amounts, separated by newlines
+        allDescriptions += `${row.description}\n`;
+        allQuantities += `${row.quantity}\n`;
+        allUnitPrices += `${row.unitPrice}\n`;
+        allAmounts += `${row.amount.toFixed(2)}\n`;
       });
 
-      // Append concatenated data into respective fields
-      form.append('particulars', allDescriptions.trim());  // All descriptions in one field
-      form.append('quantity', allQuantities.trim());      // All quantities in one field
-      form.append('unitPrice', allUnitPrices.trim());     // All unit prices in one field
+      form.append('particulars', allDescriptions.trim());
+      form.append('quantity', allQuantities.trim());
+      form.append('unitPrice', allUnitPrices.trim());
       form.append('amount', allAmounts.trim());
-
       form.append('total-amount', totalAmount.toFixed(2));
       form.append('payment-mode', paymentMode);
 
@@ -115,7 +122,7 @@ const InvoiceForm = () => {
       });
 
       if (response.ok) {
-        alert('Form submitted successfully!');
+        toast.success('Form submitted successfully!'); // Show success toast
         setRows([{ description: '', quantity: 0, unitPrice: 0, amount: 0 }]);
         setCustomerDetails({ name: '', address: '', gstin: '', cnename: '', caddress: '', cgstin: '' });
         setPaymentMode('Paid');
@@ -126,16 +133,38 @@ const InvoiceForm = () => {
       }
     } catch (error) {
       console.error('Error submitting the form:', error);
-      alert('Error submitting the form. Please try again.');
+      toast.error('Error submitting the form. Please try again.'); // Show error toast
+    } finally {
+      setLoading(false); // Stop loading
     }
   };
 
-
-
   return (
     <div className="container">
-      <form action="">
+      {loading && (
+        <div style={{
+          position: 'fixed',
+          top: '0',
+          left: '0',
+          width: '100%',
+          height: '100vh',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          backgroundColor: 'rgba(255, 255, 255, 0.7)', // Optional: add a slight background dimming effect
+          zIndex: '9999'
+        }}>
+          <Loader
+            style={{
+              fontSize: '30px',
+              color: 'blue',
+              animation: 'spin 1s linear infinite'
+            }}
+          />
+        </div>
+      )}
 
+      <form action="" onSubmit={handleSubmit}>
         <h2 style={{ textAlign: "center", margin: "0px" }}>ADARSH INDIA TRANSPORT</h2>
         <div className="header">
           <div className="left-section">
@@ -153,7 +182,7 @@ const InvoiceForm = () => {
           <div className="customer-details">
             <label htmlFor="cnename">CNr. NAME:</label>
             <input
-              className='ip'
+              className="ip"
               id="cnename"
               type="text"
               name="name"
@@ -163,51 +192,57 @@ const InvoiceForm = () => {
               required
             />
             <input
-              className='ip'
+              className="ip"
               type="text"
               name="address"
               value={customerDetails.address}
               onChange={handleCustomerChange}
               placeholder="Address:"
+              required
             />
             <input
-              className='ip'
+              className="ip"
               type="text"
               name="gstin"
               value={customerDetails.gstin}
               onChange={handleCustomerChange}
               placeholder="GSTIN No:"
+              required
             />
-            {/* New Fields Below */}
             <label htmlFor="cnename" style={{ marginTop: "10px" }}>CNe. Name:</label>
             <input
-              className='ip'
+              className="ip"
               id="cnename"
               type="text"
               name="cnename"
               value={customerDetails.cnename}
               onChange={handleCustomerChange}
               placeholder="CNe. Name:"
+              required
+
             />
             <input
-              className='ip'
+              className="ip"
               type="text"
               name="caddress"
               value={customerDetails.caddress}
               onChange={handleCustomerChange}
               placeholder="Address:"
+              required
+
             />
             <input
-              className='ip'
+              className="ip"
               type="text"
               name="cgstin"
               value={customerDetails.cgstin}
               onChange={handleCustomerChange}
               placeholder="GSTIN No:"
+              required
+
             />
           </div>
         </div>
-
 
         <table className="invoice-table">
           <thead>
@@ -247,13 +282,13 @@ const InvoiceForm = () => {
                 </td>
                 <td>{row.amount.toFixed(2)}</td>
                 <td>
-                  <input type="button" value="delete" onClick={() => deleteRow(index)} className="delete-btn"/>
+                  <input type="button" value="delete" onClick={() => deleteRow(index)} className="delete-btn" />
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
-        <input type="button" value="ADD" onClick={addRow} className="add-btn" style={{ width: "90px", height: "30px" }}/>
+        <input type="button" value="ADD" onClick={addRow} className="add-btn" style={{ width: "90px", height: "30px" }} />
 
         <div className="total">
           <p>CGST (2.5%)</p>
@@ -274,8 +309,8 @@ const InvoiceForm = () => {
             </select>
           </label>
           <div className="payment-btns">
-            <input type="submit" value="submit" onClick={handleSubmit} className="submit-btn" />
-            <input type="button" value="Reset Bill no" onClick={handlebillno} />
+            <input type="submit" value="submit" className="submit-btn" />
+            <input type="button" value="Reset Bill no" className='resetbill' onClick={handlebillno} />
           </div>
         </div>
 
@@ -285,8 +320,10 @@ const InvoiceForm = () => {
           </p>
         </div>
       </form>
-    </div >
-  );
-};
 
+      {/* ToastContainer to show toast messages */}
+      <ToastContainer />
+    </div>
+  );
+}
 export default InvoiceForm;
